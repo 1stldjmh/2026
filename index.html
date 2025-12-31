@@ -231,22 +231,50 @@ const texts=[
     "心想事成 🌈"
 ];
 
-function popup(name){
-    const d=document.createElement("div");
-    d.className="popup";
-    d.style.left=Math.random()*70+"vw";
-    d.style.top=Math.random()*70+"vh";
-    d.style.background=`hsl(${Math.random()*360},80%,60%)`;
-    d.innerText=(name?name+"，":"")+texts[Math.floor(Math.random()*texts.length)];
-    d.onclick=()=>{
+let popupIndex = 0;
+
+function popup(name) {
+    const d = document.createElement("div");
+    d.className = "popup";
+
+    /* === 手机端适配判断 === */
+    const isMobile = innerWidth < 768;
+
+    if (isMobile) {
+        // 3 列 × 若干行的“安全网格”
+        const cols = 3;
+        const gapX = 100 / cols;
+        const col = popupIndex % cols;
+        const row = Math.floor(popupIndex / cols);
+
+        // 网格基础位置 + 随机抖动
+        const x = col * gapX + Math.random() * 10 + 5;
+        const y = row * 12 + Math.random() * 5 + 10;
+
+        d.style.left = x + "vw";
+        d.style.top  = y + "vh";
+    } else {
+        // 桌面端继续疯狂随机
+        d.style.left = Math.random() * 70 + "vw";
+        d.style.top  = Math.random() * 70 + "vh";
+    }
+
+    d.style.background = `hsl(${Math.random() * 360},80%,60%)`;
+    d.innerText = (name ? name + "，" : "") +
+        texts[Math.floor(Math.random() * texts.length)];
+
+    d.onclick = () => {
         boom(
-            d.offsetLeft+d.offsetWidth/2,
-            d.offsetTop+d.offsetHeight/2
+            d.offsetLeft + d.offsetWidth / 2,
+            d.offsetTop + d.offsetHeight / 2
         );
         d.remove();
     };
+
     document.body.appendChild(d);
+    popupIndex++;
 }
+
 
 /* ================= 爱心雨 ================= */
 function heartRain(){
