@@ -49,9 +49,9 @@ canvas {
     animation: fadeIn 1.5s ease;
 }
 
+
 h1 {
-    font-size: 16vw;
-    max-font-size: 90px;
+    font-size: min(16vw, 90px);
     color: #ffd479;
     text-shadow: 0 0 20px rgba(255,212,121,0.9);
 }
@@ -95,6 +95,8 @@ button {
     animation: popIn .4s ease;
     max-width: 90vw;
     text-align: center;
+    user-select: none;
+    cursor: pointer;
 }
 
 @keyframes popIn {
@@ -164,31 +166,39 @@ button {
     </div>
 </div>
 
-<audio id="bgm" loop>
-    <source src="bgm.wav" type="audio/mpeg">
+<audio id="bgm" preload="auto" loop playsinline webkit-playsinline>
+    <source src="bgm.mp3" type="audio/mpeg">
 </audio>
 
 <script>
-/* ================= 名字 → 图片映射 ================= */
+/* ================= 名字 → 图片 ================= */
 const nameImageMap = {
     "stl": "1.jpg",
     "好兄弟": "2.jpg",
     "帅哥": "3.jpg",
-    "甜妹": "4.jpg"
+    "甜妹": "4.jpg",
+    "沈万锦": "5.jpg"
 };
+// 固定替代图片（终态）
+const FINAL_SPIN_IMAGE = "final.jpg";
+
 
 /* ================= 烟花 ================= */
 const canvas = document.getElementById("fireworks");
 const ctx = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
-onresize = ()=>{canvas.width=innerWidth;canvas.height=innerHeight};
+onresize = () => {
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+};
 
 let fireworks = [];
 
 function boom(x,y){
     let ps=[];
-    for(let i=0;i<80;i++){
+    const n = innerWidth < 768 ? 45 : 80;
+    for(let i=0;i<n;i++){
         ps.push({
             x,y,
             a:Math.random()*Math.PI*2,
@@ -219,8 +229,8 @@ function animate(){
 }
 animate();
 
-/* ================= 祝福弹窗 ================= */
-const texts=[
+/* ================= 漂浮弹窗系统 ================= */
+const texts = [
     "新的一年 万事顺意 🌟",
     "好运正在奔向你 🍀",
     "每天都要开心呀 😊",
@@ -231,50 +241,51 @@ const texts=[
     "心想事成 🌈"
 ];
 
-let popupIndex = 0;
+const popups = [];
 
-function popup(name) {
+function popup(name){
     const d = document.createElement("div");
     d.className = "popup";
-
-    /* === 手机端适配判断 === */
-    const isMobile = innerWidth < 768;
-
-    if (isMobile) {
-        // 3 列 × 若干行的“安全网格”
-        const cols = 3;
-        const gapX = 100 / cols;
-        const col = popupIndex % cols;
-        const row = Math.floor(popupIndex / cols);
-
-        // 网格基础位置 + 随机抖动
-        const x = col * gapX + Math.random() * 10 + 5;
-        const y = row * 12 + Math.random() * 5 + 10;
-
-        d.style.left = x + "vw";
-        d.style.top  = y + "vh";
-    } else {
-        // 桌面端继续疯狂随机
-        d.style.left = Math.random() * 70 + "vw";
-        d.style.top  = Math.random() * 70 + "vh";
-    }
-
-    d.style.background = `hsl(${Math.random() * 360},80%,60%)`;
     d.innerText = (name ? name + "，" : "") +
-        texts[Math.floor(Math.random() * texts.length)];
+        texts[Math.floor(Math.random()*texts.length)];
+    d.style.background = `hsl(${Math.random()*360},80%,60%)`;
+
+    // 初始位置
+    let x = Math.random() * (innerWidth - 200);
+    let y = Math.random() * (innerHeight - 200);
+
+    // 随机速度
+    let vx = (Math.random()*2 + 1) * (Math.random()<0.5 ? -1 : 1)*0.2;
+    let vy = (Math.random()*2 + 1) * (Math.random()<0.5 ? -1 : 1)*0.2;
 
     d.onclick = () => {
-        boom(
-            d.offsetLeft + d.offsetWidth / 2,
-            d.offsetTop + d.offsetHeight / 2
-        );
+        boom(x + d.offsetWidth/2, y + d.offsetHeight/2);
         d.remove();
+        popups.splice(popups.indexOf(obj),1);
+		popup(name);
     };
 
     document.body.appendChild(d);
-    popupIndex++;
+
+    const obj = { el:d, x,y,vx,vy };
+    popups.push(obj);
 }
 
+/* 弹窗运动 */
+function movePopups(){
+    popups.forEach(p=>{
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if(p.x <= 0 || p.x + p.el.offsetWidth >= innerWidth) p.vx *= -1;
+        if(p.y <= 0 || p.y + p.el.offsetHeight >= innerHeight) p.vy *= -1;
+
+        p.el.style.left = p.x + "px";
+        p.el.style.top  = p.y + "px";
+    });
+    requestAnimationFrame(movePopups);
+}
+movePopups();
 
 /* ================= 爱心雨 ================= */
 function heartRain(){
@@ -289,25 +300,49 @@ function heartRain(){
 
 /* ================= 自转图片 ================= */
 function showSpinImage(src){
-    const img=document.createElement("img");
-    img.src=src;
-    img.className="spin-img";
-    img.onclick=()=>boom(innerWidth/2,innerHeight/2);
+    // 保证页面上只有一张
+    const old = document.querySelector(".spin-img");
+    if (old) old.remove();
+
+    const img = document.createElement("img");
+    img.src = src;
+    img.className = "spin-img";
+
+    img.onclick = () => {
+        // 放烟花
+        boom(innerWidth/2, innerHeight/2);
+
+        // 如果已经是终态图片，就不再替换
+        if (src === FINAL_SPIN_IMAGE) return;
+
+        // 删除当前图片
+        img.remove();
+
+        // 生成固定的终态图片
+        showSpinImage(FINAL_SPIN_IMAGE);
+    };
+
     document.body.appendChild(img);
 }
 
+
 /* ================= 开始 ================= */
 function start(){
-    const name=document.getElementById("nameInput").value||"朋友";
+    const name=document.getElementById("nameInput").value || "朋友";
     document.getElementById("startCard").remove();
-    document.getElementById("bgm").play();
+
+    const bgm=document.getElementById("bgm");
+    setTimeout(()=>{
+        bgm.volume=0.6;
+        bgm.play().catch(()=>{});
+    },300);
 
     if(nameImageMap[name]){
         showSpinImage(nameImageMap[name]);
     }
 
-    for(let i=0;i<45;i++){
-        setTimeout(()=>popup(name),i*80);
+    for(let i=0;i<30;i++){
+        setTimeout(()=>popup(name),i*120);
     }
 
     setInterval(()=>boom(
@@ -315,7 +350,7 @@ function start(){
         Math.random()*canvas.height*0.6
     ),1500);
 
-    setInterval(heartRain,300);
+    setInterval(heartRain, innerWidth < 768 ? 500 : 300);
 }
 </script>
 
