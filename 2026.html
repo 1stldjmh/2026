@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026快乐 🎉</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Microsoft YaHei", Arial, sans-serif;
+}
+
+body {
+    height: 100vh;
+    overflow: hidden;
+    background: radial-gradient(circle at bottom, #1b2735, #090a0f);
+    color: #fff;
+}
+
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.container {
+    position: relative;
+    z-index: 2;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.card {
+    width: 100%;
+    max-width: 380px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    padding: 35px 25px;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(255,200,150,0.35);
+    animation: fadeIn 1.5s ease;
+}
+
+h1 {
+    font-size: 16vw;
+    max-font-size: 90px;
+    color: #ffd479;
+    text-shadow: 0 0 20px rgba(255,212,121,0.9);
+}
+
+h2 {
+    font-size: 7vw;
+    margin: 12px 0 20px;
+}
+
+input {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 24px;
+    border: none;
+    outline: none;
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    font-size: 20px;
+    border-radius: 30px;
+    border: none;
+    background: linear-gradient(135deg,#ffb347,#ffcc33);
+    color: #333;
+    box-shadow: 0 8px 20px rgba(255,180,80,0.5);
+}
+
+/* 弹窗 */
+.popup {
+    position: fixed;
+    padding: 22px 26px;
+    border-radius: 26px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #fff;
+    z-index: 3;
+    animation: popIn .4s ease;
+    max-width: 90vw;
+    text-align: center;
+}
+
+@keyframes popIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
+
+/* 爱心雨 */
+.heart {
+    position: fixed;
+    top: -20px;
+    font-size: 22px;
+    animation: fall linear forwards;
+    z-index: 2;
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(110vh);
+        opacity: 0;
+    }
+}
+
+/* 自转图片彩蛋 */
+.spin-img {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 220px;
+    height: 220px;
+    transform: translate(-50%, -50%);
+    border-radius: 20px;
+    z-index: 4;
+    box-shadow:
+        0 0 30px rgba(255,255,255,0.9),
+        0 0 80px rgba(255,100,100,0.9);
+    animation: spin 3s linear infinite, pulse 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%,100% { scale: 1; }
+    50% { scale: 1.12; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="fireworks"></canvas>
+
+<div class="container">
+    <div class="card" id="startCard">
+        <h1>2026</h1>
+        <h2>元旦快乐 🎉</h2>
+        <input id="nameInput" placeholder="what's your name?">
+        <button onclick="start()">enter 💥</button>
+    </div>
+</div>
+
+<audio id="bgm" loop>
+    <source src="bgm.wav" type="audio/mpeg">
+</audio>
+
+<script>
+/* ================= 名字 → 图片映射 ================= */
+const nameImageMap = {
+    "stl": "1.jpg",
+    "好兄弟": "2.jpg",
+    "帅哥": "3.jpg",
+    "甜妹": "4.jpg"
+};
+
+/* ================= 烟花 ================= */
+const canvas = document.getElementById("fireworks");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+onresize = ()=>{canvas.width=innerWidth;canvas.height=innerHeight};
+
+let fireworks = [];
+
+function boom(x,y){
+    let ps=[];
+    for(let i=0;i<80;i++){
+        ps.push({
+            x,y,
+            a:Math.random()*Math.PI*2,
+            s:Math.random()*6+2,
+            l:50,
+            c:`hsl(${Math.random()*360},100%,60%)`
+        });
+    }
+    fireworks.push(ps);
+}
+
+function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    fireworks.forEach((ps,i)=>{
+        ps.forEach(p=>{
+            p.x+=Math.cos(p.a)*p.s;
+            p.y+=Math.sin(p.a)*p.s;
+            p.l--;
+            ctx.fillStyle=p.c;
+            ctx.beginPath();
+            ctx.arc(p.x,p.y,2,0,Math.PI*2);
+            ctx.fill();
+        });
+        fireworks[i]=ps.filter(p=>p.l>0);
+    });
+    fireworks=fireworks.filter(ps=>ps.length);
+    requestAnimationFrame(animate);
+}
+animate();
+
+/* ================= 祝福弹窗 ================= */
+const texts=[
+    "新的一年 万事顺意 🌟",
+    "好运正在奔向你 🍀",
+    "每天都要开心呀 😊",
+    "愿你被世界温柔以待 ✨",
+    "烦恼退退退 🚫",
+    "快乐拉满 💯",
+    "平安健康 ❤️",
+    "心想事成 🌈"
+];
+
+function popup(name){
+    const d=document.createElement("div");
+    d.className="popup";
+    d.style.left=Math.random()*70+"vw";
+    d.style.top=Math.random()*70+"vh";
+    d.style.background=`hsl(${Math.random()*360},80%,60%)`;
+    d.innerText=(name?name+"，":"")+texts[Math.floor(Math.random()*texts.length)];
+    d.onclick=()=>{
+        boom(
+            d.offsetLeft+d.offsetWidth/2,
+            d.offsetTop+d.offsetHeight/2
+        );
+        d.remove();
+    };
+    document.body.appendChild(d);
+}
+
+/* ================= 爱心雨 ================= */
+function heartRain(){
+    const h=document.createElement("div");
+    h.className="heart";
+    h.innerText="💖";
+    h.style.left=Math.random()*100+"vw";
+    h.style.animationDuration=3+Math.random()*3+"s";
+    document.body.appendChild(h);
+    setTimeout(()=>h.remove(),6000);
+}
+
+/* ================= 自转图片 ================= */
+function showSpinImage(src){
+    const img=document.createElement("img");
+    img.src=src;
+    img.className="spin-img";
+    img.onclick=()=>boom(innerWidth/2,innerHeight/2);
+    document.body.appendChild(img);
+}
+
+/* ================= 开始 ================= */
+function start(){
+    const name=document.getElementById("nameInput").value||"朋友";
+    document.getElementById("startCard").remove();
+    document.getElementById("bgm").play();
+
+    if(nameImageMap[name]){
+        showSpinImage(nameImageMap[name]);
+    }
+
+    for(let i=0;i<45;i++){
+        setTimeout(()=>popup(name),i*80);
+    }
+
+    setInterval(()=>boom(
+        Math.random()*canvas.width,
+        Math.random()*canvas.height*0.6
+    ),1500);
+
+    setInterval(heartRain,300);
+}
+</script>
+
+</body>
+</html>
